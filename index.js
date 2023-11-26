@@ -14,7 +14,7 @@ app.use(express.json());
 
 // mongo db setup
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri =
   "mongodb+srv://delwar2021bd:koajaibona1@cluster0.mn7153h.mongodb.net/?retryWrites=true&w=majority";
 
@@ -51,10 +51,42 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/teacher-req', async(req, res) =>{
+        const result = await teacherCollection.find().toArray();
+        res.send(result);
+    })
+
+
     app.post('/teacher-req', (req, res) =>{
         const data = req.body;
         const result = teacherCollection.insertOne(data);
         res.send(result)
+    })
+
+    app.patch('/admin/teacher/:email', async(req, res) =>{
+        const email = req.params.email;
+        const query = {email: email};
+        const updatedDoc ={
+            $set:{
+                role: "teacher"
+            }
+        }
+        const result = await userCollection.updateOne(query, updatedDoc)
+        res.send(result);
+
+    })
+
+    app.patch('/admin/teacher-req/:email', async(req, res) =>{
+        const email = req.params.email;
+        const data = req.body.status;
+        const query = {email: email};
+        const updatedDoc = {
+            $set: {
+                status: data
+            }
+        }
+        const result = teacherCollection.updateOne(query, updatedDoc);
+        res.send({message: "success"});
     })
 
 

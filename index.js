@@ -32,27 +32,25 @@ async function run() {
     // database collections
     const userCollection = client.db("eduTrack").collection("users");
     const teacherCollection = client.db("eduTrack").collection("teacher-req");
+    const classCollection = client.db("eduTrack").collection("classes");
 
     // mongo db
     // TODO: it should be admin verified
     app.get("/users", async (req, res) => {
-        // const search = req.params.search;
-        // let result;
-        // console.log(search);
-        // const isEmail = search.includes("@");
-        // if(isEmail){
-        //     result = await userCollection.findOne({email: search});
-        // }
-        // else if(!isEmail){
-        //     result = await userCollection.findOne({name: search});
-        // }
-        // else{
-        //     result = await userCollection.find().toArray();
-        // }
       let result = await userCollection.find().toArray();
       res.send(result);
     });
 
+    // getting a single user 
+    app.get('/user/:email', async(req, res) =>{
+      const email = req.params.email;
+      console.log(email)
+      const query = {email: email};
+      const result = await userCollection.findOne(query); 
+      res.send(result);
+    })
+
+    // checking before register if the user is already in db the taking appropriate action
     app.post("/users", (req, res) => {
       const userInfo = req.body;
       const query = { email: userInfo.email };
@@ -64,17 +62,27 @@ async function run() {
       res.send(result);
     });
 
+    // getting all the teacher req for admin panel to
     app.get("/teacher-req", async (req, res) => {
       const result = await teacherCollection.find().toArray();
       res.send(result);
     });
 
+    // posting teacher req from req-teacher
     app.post("/teacher-req", (req, res) => {
       const data = req.body;
       const result = teacherCollection.insertOne(data);
       res.send(result);
     });
 
+    // adding class to db
+    app.post('add-class', async(req, res) =>{
+      const data = req.body;
+      const result = await classCollection.insertOne(data); 
+      res.send(result);
+    })
+
+    // changing the role of user to teacher
     app.patch("/admin/teacher/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
@@ -87,6 +95,7 @@ async function run() {
       res.send(result);
     });
 
+    // changing the user role to admin
     app.patch('/admin/admin/:id', async(req, res) =>{
         const id = req.params.id;
         const doc = req.body;
@@ -100,6 +109,7 @@ async function run() {
         res.send(result);
     })
 
+    // changing the teacher req state to accepted or rejected
     app.patch("/admin/teacher-req/:email", async (req, res) => {
       const email = req.params.email;
       const data = req.body.status;

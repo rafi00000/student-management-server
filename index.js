@@ -44,7 +44,6 @@ async function run() {
     // getting a single user 
     app.get('/user/:email', async(req, res) =>{
       const email = req.params.email;
-      console.log(email)
       const query = {email: email};
       const result = await userCollection.findOne(query); 
       res.send(result);
@@ -76,11 +75,41 @@ async function run() {
     });
 
     // adding class to db
-    app.post('add-class', async(req, res) =>{
+    app.post('/add-class', async(req, res) =>{
       const data = req.body;
       const result = await classCollection.insertOne(data); 
       res.send(result);
     })
+
+    // getting all class
+    app.get('/classes', async(req, res) =>{
+      const result = await classCollection.find().toArray();
+      res.send(result);
+    })
+
+    // getting data of classes for specific teacher
+    app.get('/classes/:email', async(req, res) =>{
+       const email = req.params.email;
+       const query = {email: email};
+        const result = await classCollection.find(query).toArray();
+        res.send(result);
+    })
+
+    // changing the state of class pending to rejected or accepted from admin
+    app.patch('/add-class-action/:email', async(req, res) =>{
+      const email = req.params.email;
+      const data = req.body;
+      console.log(email, data)
+      const query = {email: email};
+      const updatedDoc = {
+        $set: {
+          status: data.status
+        }
+      }
+      const result = await classCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    })
+
 
     // changing the role of user to teacher
     app.patch("/admin/teacher/:email", async (req, res) => {
@@ -99,7 +128,6 @@ async function run() {
     app.patch('/admin/admin/:id', async(req, res) =>{
         const id = req.params.id;
         const doc = req.body;
-        console.log(id);
         const query = {_id: new ObjectId(id)};
         const updatedDoc = {
             $set: {role: doc.role}

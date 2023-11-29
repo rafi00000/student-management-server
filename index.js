@@ -81,9 +81,15 @@ async function run() {
       res.send(result);
     })
 
-    // getting all class
+    // getting all class for admin
     app.get('/classes', async(req, res) =>{
       const result = await classCollection.find().toArray();
+      res.send(result);
+    })
+
+    // getting all accepted class for the students
+    app.get('/classes/student', async(req, res) =>{
+      const result = await classCollection.find({status: "accepted"}).toArray();
       res.send(result);
     })
 
@@ -117,6 +123,14 @@ async function run() {
         }
       };
       const result = await classCollection.updateOne(query, updatedDoc, {upsert: true});
+      res.send(result);
+    })
+
+    // deleting a class from my class
+    app.delete('/class/:id', (req, res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)} ; 
+      const result = classCollection.deleteOne(query);
       res.send(result);
     })
 

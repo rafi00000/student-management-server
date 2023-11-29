@@ -95,6 +95,31 @@ async function run() {
         res.send(result);
     })
 
+    app.get('/classes/single/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await classCollection.findOne(query);
+      res.send(result);
+    })
+
+    app.patch('/class/update/:id', async(req, res ) =>{
+      const id = req.params.id;
+      const updateData = req.body;
+      console.log(updateData);
+      const query = {_id: new ObjectId(id)};
+      const updatedDoc ={
+        $set: {
+          title: updateData.title,
+          name: updateData.name,
+          email: updateData.email,
+          price: updateData.price,
+          image: updateData.image
+        }
+      };
+      const result = await classCollection.updateOne(query, updatedDoc, {upsert: true});
+      res.send(result);
+    })
+
     // changing the state of class pending to rejected or accepted from admin
     app.patch('/add-class-action/:email', async(req, res) =>{
       const email = req.params.email;

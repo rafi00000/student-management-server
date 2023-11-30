@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require('dotenv').config();
 const stripe = require("stripe")(`${process.env.STRIPE_SECRET_KEY}`);
 const port = process.env.PORT || 5000;
@@ -8,7 +9,7 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["https://orange-goldfish.surge.sh"],
     credentials: true,
   })
 );
@@ -16,7 +17,6 @@ app.use(express.json());
 
 // mongo db setup
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri =
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.mn7153h.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -36,6 +36,7 @@ async function run() {
     const teacherCollection = client.db("eduTrack").collection("teacher-req");
     const classCollection = client.db("eduTrack").collection("classes");
     const paymentCollection = client.db("eduTrack").collection("payment");
+    const assignmentCollection = client.db("eduTrack").collection("assignment");
 
     // mongo db
     // TODO: it should be admin verified
@@ -102,6 +103,47 @@ async function run() {
        const query = {email: email};
         const result = await classCollection.find(query).toArray();
         res.send(result);
+    })
+
+    // updating enroll count after payment
+    app.patch("/enroll", async(req, res) =>{
+      const {enroll} = req.body;
+      console.log(enroll)
+      const {id} = req.body;
+      const classQuery = {_id: new ObjectId(id)};
+      const isExist = await classCollection.findOne(classQuery);
+      console.log(isExist)
+
+      const enrolled = isExist.enrolled + enroll;
+      
+      const updatedDoc = {
+        $set: {
+          enrolled: enrolled
+        }
+      }
+
+      const result = await classCollection.updateOne(classQuery, updatedDoc);
+      console.log(result);
+      
+    })
+
+    // getting the featured section data
+    app.get('/featured', async(req, res) =>{
+      const result = await classCollection.find().sort({enrolled: -1}).limit(9).toArray();
+      console.log(result)
+      res.send(result)
+    })
+
+    app.get('/stats', async(req, res) =>{
+      const usersCount = await userCollection.estimatedDocumentCount();
+      const classCount = await classCollection.estimatedDocumentCount();
+      const enrollCount = await paymentCollection.estimatedDocumentCount();
+      const stats = {
+        usersCount,
+        classCount,
+        enrollCount
+      };
+      res.send(stats);
     })
 
     app.get('/classes/single/:id', async(req, res) =>{

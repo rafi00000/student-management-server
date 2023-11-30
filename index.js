@@ -35,6 +35,7 @@ async function run() {
     const userCollection = client.db("eduTrack").collection("users");
     const teacherCollection = client.db("eduTrack").collection("teacher-req");
     const classCollection = client.db("eduTrack").collection("classes");
+    const paymentCollection = client.db("eduTrack").collection("payment");
 
     // mongo db
     // TODO: it should be admin verified
@@ -113,7 +114,6 @@ async function run() {
     app.patch('/class/update/:id', async(req, res ) =>{
       const id = req.params.id;
       const updateData = req.body;
-      console.log(updateData);
       const query = {_id: new ObjectId(id)};
       const updatedDoc ={
         $set: {
@@ -140,7 +140,6 @@ async function run() {
     app.patch('/add-class-action/:id', async(req, res) =>{
       const id = req.params.id;
       const data = req.body;
-      console.log(id, data);
       const query = {_id: new ObjectId(id)};
       const updatedDoc = {
         $set: {
@@ -148,7 +147,6 @@ async function run() {
         }
       }
       const result = await classCollection.updateOne(query, updatedDoc);
-      console.log(result)
       res.send(result);
     })
 
@@ -198,7 +196,6 @@ async function run() {
     app.post('/create-payment-intent', async(req, res) =>{
       const {price} = req.body;
       const amount = parseInt(price * 100);
-      console.log(amount)
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -210,6 +207,21 @@ async function run() {
         clientSecret: paymentIntent.client_secret
       })
     })
+
+    app.post("/payment", async(req, res) =>{
+      const paymentInfo = req.body;
+      const result = await paymentCollection.insertOne(paymentInfo);
+      res.send(result);
+    })
+
+    app.get("/payment/:email", async(req, res) =>{
+      const email = req.params.email;
+      const query = {email: email};
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    })
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

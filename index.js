@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+require('dotenv').config();
+const stripe = require("stripe")(`${process.env.STRIPE_SECRET_KEY}`);
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -16,7 +18,7 @@ app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri =
-  "mongodb+srv://delwar2021bd:koajaibona1@cluster0.mn7153h.mongodb.net/?retryWrites=true&w=majority";
+  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.mn7153h.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -135,17 +137,18 @@ async function run() {
     })
 
     // changing the state of class pending to rejected or accepted from admin
-    app.patch('/add-class-action/:email', async(req, res) =>{
-      const email = req.params.email;
+    app.patch('/add-class-action/:id', async(req, res) =>{
+      const id = req.params.id;
       const data = req.body;
-      console.log(email, data)
-      const query = {email: email};
+      console.log(id, data);
+      const query = {_id: new ObjectId(id)};
       const updatedDoc = {
         $set: {
           status: data.status
         }
       }
       const result = await classCollection.updateOne(query, updatedDoc);
+      console.log(result)
       res.send(result);
     })
 
@@ -189,6 +192,24 @@ async function run() {
       const result = teacherCollection.updateOne(query, updatedDoc);
       res.send({ message: "success" });
     });
+
+    // payment intents
+    
+    app.post('/create-payment-intent', async(req, res) =>{
+      const {price} = req.body;
+      const amount = parseInt(price * 100);
+      console.log(amount)
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ["card"]
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
